@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.IO;
 
+[assembly: System.Runtime.Versioning.SupportedOSPlatform("windows")]
 namespace Advanced_Text_Adventure
 {
     internal class Program
@@ -9,8 +10,7 @@ namespace Advanced_Text_Adventure
 
         static void Main(string[] args)
         {
-            for (int troll = 0; troll < 100; troll++)
-                DrawImage("image");
+            DrawImage("image");
         }
 
         public static void DrawImage(string name)
@@ -21,12 +21,33 @@ namespace Advanced_Text_Adventure
                 for (int x = 0; x < image.Width; x++)
                 {
                     Color color = image.GetPixel(x, y);
-                    int lightLevel = (int)MathF.Round(MathF.Max(MathF.Max(color.R, color.G), color.B) / 255f * (shades.Length - 1));
-                    Console.Write(shades[lightLevel]);
-                    Console.Write(shades[lightLevel]);
+                    int value = (int)MathF.Round(MathF.Max(MathF.Max(color.R, color.G), color.B) / 255f * (shades.Length - 1));
+                    float hue = color.GetHue();
+                    if (MathF.Min(MathF.Min(color.R, color.G), color.B) > 200)
+                        Console.ForegroundColor = ConsoleColor.White;
+                    else
+                        Console.ForegroundColor = GetColor(hue);
+                    Console.Write(shades[value]);
+                    Console.Write(shades[value]);
                 }
                 Console.Write(" \r\n");
             }
+        }
+
+        public static ConsoleColor GetColor(float hue)
+        { 
+            if (hue >= 330 || hue <= 25) 
+                return ConsoleColor.Red; 
+            else if (hue >= 25 && hue <= 70)
+                return ConsoleColor.Yellow;
+            else if (hue >= 70 && hue <= 140)
+                return ConsoleColor.Green;
+            else if (hue >= 140 && hue <= 200)
+                return ConsoleColor.Cyan;
+            else if (hue >= 200 && hue <= 270)
+                return ConsoleColor.Blue;
+            else
+                return ConsoleColor.Magenta;
         }
     }
 }
