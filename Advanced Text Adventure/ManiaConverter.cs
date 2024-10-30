@@ -1,5 +1,4 @@
 ﻿using Advanced_Text_Adventure;
-using System.IO;
 using System.IO.Compression;
 
 public class ManiaConverter
@@ -11,10 +10,36 @@ public class ManiaConverter
         List<int> timings = [];
         List<int> lanes = [];
         List<int> holds = [];
-        string zipPath = Console.ReadLine().Replace("\"", "");
-        string folderName = zipPath.Split("\\")[^1];
-        ZipFile.ExtractToDirectory(zipPath, Directory.GetCurrentDirectory() + "/Data/" + folderName, true);
-        activeSongPath = Directory.GetCurrentDirectory() + "/Data/" + folderName;
+        if (!Directory.Exists(Program.dataPath))
+            Directory.CreateDirectory(Program.dataPath);
+        Console.WriteLine("-1: Import Song");
+        string[] songPaths = Directory.GetDirectories(Program.dataPath);
+        for (int i = 0; i < songPaths.Length; i++)
+        {
+            List<string> songData = [.. File.ReadAllText(Directory.GetFiles(songPaths[i], "*.osu")[0]).Split("\r\n")];
+            int metadataIndex = songData.IndexOf("[Metadata]");
+            string songName = songData[metadataIndex + 1].Split(":")[1];
+            string artistName = songData[metadataIndex + 3].Split(":")[1];
+            Console.WriteLine($"{i}: {songName} ({artistName})");
+        }
+        int songIndex = Program.InputInt(-1, songPaths.Length);
+        if (songIndex > -1)
+            activeSongPath = Directory.GetDirectories(Program.dataPath)[songIndex];
+        else
+        {
+            string newPath = Console.ReadLine();
+            string zipPath = newPath.Replace("\"", "");
+            string folderName = zipPath.Split("\\")[^1];
+            ZipFile.ExtractToDirectory(zipPath, Program.dataPath + folderName, true);
+            activeSongPath = Program.dataPath + folderName;
+        }
+        string[] difficultyPaths = Directory.GetFiles(activeSongPath, "*.osu");
+        for (int d = 0; d < difficultyPaths.Length; d++)
+        {
+            List<string> diffData = [.. File.ReadAllText(difficultyPaths[d]).Split("\r\n")];
+            string diffName = diffData[diffData.IndexOf("[Metadata]") + 6].Split(":")[1];
+            Console.WriteLine($"{d}: {diffName}");
+        }
         int diff = int.Parse(Console.ReadLine());
         Console.WriteLine("Loading...");
         List<string> dataList = [.. File.ReadAllText(Directory.GetFiles(activeSongPath, "*.osu")[diff]).Split("\r\n")];

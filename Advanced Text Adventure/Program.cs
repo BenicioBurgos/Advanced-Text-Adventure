@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.IO.Compression;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -31,8 +30,11 @@ namespace Advanced_Text_Adventure
         public static int hitDelta;
         public static float scrollSpeed = 1.8f;
 
+        public static string dataPath;
+
         static void Main(string[] args)
         {
+            dataPath = Directory.GetCurrentDirectory() + "/Data/";
             ManiaConverter.Convert();
             Console.CursorVisible = false;
             DrawStats();
@@ -44,7 +46,7 @@ namespace Advanced_Text_Adventure
             stopwatch.Start();
             while (true)
             {
-                timer = stopwatch.ElapsedMilliseconds - 190;
+                timer = stopwatch.ElapsedMilliseconds - 535;
                 if (noteToSpawn < noteTimes.Count && noteTimes[noteToSpawn] - (50 / scrollSpeed) * height - 50 < timer)
                 {
                     notes.Add(new(noteTimes[noteToSpawn], noteLanes[noteToSpawn], noteHolds[noteToSpawn]));
@@ -113,7 +115,7 @@ namespace Advanced_Text_Adventure
                         while (yAt > 0)
                         {
                             yAt--;
-                            if ((yAt >= holdEnd && yAt < height + 3) || yAt == pos.Y - 1)
+                            if (((yAt >= holdEnd || yAt == pos.Y - 1) && yAt < height + 3))
                                 noteRender[yAt] = ReplaceChar(noteRender[yAt], (int)pos.X, "░░");
                             else break;
                         }
@@ -211,6 +213,22 @@ namespace Advanced_Text_Adventure
             output += replacement;
             for (int i = index + replacement.Length; i < text.Length; i++)
                 output += text[i];
+            return output;
+        }
+
+        public static string InputString(List<string> options)
+        {
+            string output = "";
+            while (!options.Contains(output))
+                output = Console.ReadLine().ToLower();
+            return output;
+        }
+
+        public static int InputInt(int min, int max)
+        {
+            int output = min - 1;
+            while (output < min || output > max)
+                int.TryParse(Console.ReadLine(), out output);
             return output;
         }
     }
