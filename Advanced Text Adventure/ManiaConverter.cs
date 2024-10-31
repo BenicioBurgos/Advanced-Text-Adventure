@@ -3,46 +3,19 @@ using System.IO.Compression;
 
 public class ManiaConverter
 {
-    public static string activeSongPath;
-
-    public static void Convert()
+    public static void ReadData()
     {
         List<int> timings = [];
         List<int> lanes = [];
         List<int> holds = [];
-        if (!Directory.Exists(Program.dataPath))
-            Directory.CreateDirectory(Program.dataPath);
-        Console.WriteLine("-1: Import Song");
-        string[] songPaths = Directory.GetDirectories(Program.dataPath);
-        for (int i = 0; i < songPaths.Length; i++)
-        {
-            List<string> songData = [.. File.ReadAllText(Directory.GetFiles(songPaths[i], "*.osu")[0]).Split("\r\n")];
-            int metadataIndex = songData.IndexOf("[Metadata]");
-            string songName = songData[metadataIndex + 1].Split(":")[1];
-            string artistName = songData[metadataIndex + 3].Split(":")[1];
-            Console.WriteLine($"{i}: {songName} ({artistName})");
-        }
-        int songIndex = Program.InputInt(-1, songPaths.Length);
-        if (songIndex > -1)
-            activeSongPath = Directory.GetDirectories(Program.dataPath)[songIndex];
-        else
-        {
-            string newPath = Console.ReadLine();
-            string zipPath = newPath.Replace("\"", "");
-            string folderName = zipPath.Split("\\")[^1];
-            ZipFile.ExtractToDirectory(zipPath, Program.dataPath + folderName, true);
-            activeSongPath = Program.dataPath + folderName;
-        }
-        string[] difficultyPaths = Directory.GetFiles(activeSongPath, "*.osu");
-        for (int d = 0; d < difficultyPaths.Length; d++)
-        {
-            List<string> diffData = [.. File.ReadAllText(difficultyPaths[d]).Split("\r\n")];
-            string diffName = diffData[diffData.IndexOf("[Metadata]") + 6].Split(":")[1];
-            Console.WriteLine($"{d}: {diffName}");
-        }
+        for (int s = 0; s < Program.songs.Count; s++)
+            Console.WriteLine($"{s}: {Program.songs[s].name} ({Program.songs[s].artist})");
+        int songIndex = Program.InputInt(0, Program.songs.Count);
+        for (int d = 0; d < Program.songs[songIndex].chartPaths.Length; d++)
+            Console.WriteLine($"{d}: {Program.songs[songIndex].chartNames[d]}");
         int diff = int.Parse(Console.ReadLine());
         Console.WriteLine("Loading...");
-        List<string> dataList = [.. File.ReadAllText(Directory.GetFiles(activeSongPath, "*.osu")[diff]).Split("\r\n")];
+        List<string> dataList = [.. File.ReadAllText(Program.songs[songIndex].chartPaths[diff]).Split("\r\n")];
         int l = dataList.IndexOf("[HitObjects]");
         for (int i = 0; i <= l; i++)
             dataList.RemoveAt(0);
@@ -111,5 +84,25 @@ public class ManiaConverter
         Program.noteLanes = lanes;
         Program.noteHolds = holds;
         Console.Clear();
+    }
+
+    public static void ImportSong()
+    {
+        Console.WriteLine("Drag and drop an osz file into the window to import a song");
+        string newPath = Console.ReadLine();
+        string zipPath = newPath.Replace("\"", "");
+        if (File.Exists(zipPath))
+        {
+            string folderName = zipPath.Split("\\")[^1];
+            ZipFile.ExtractToDirectory(zipPath, Program.dataPath + folderName, true);
+            Program.LoadSongs();
+            Console.WriteLine("Import successful");
+            Console.ReadLine();
+        }
+        else
+        {
+            Console.WriteLine("Invalid path");
+            Console.ReadLine();
+        }
     }
 }
