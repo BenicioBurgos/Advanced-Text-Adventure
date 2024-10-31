@@ -8,14 +8,9 @@ public class ManiaConverter
         List<int> timings = [];
         List<int> lanes = [];
         List<int> holds = [];
-        for (int s = 0; s < Program.songs.Count; s++)
-            Console.WriteLine($"{s}: {Program.songs[s].name} ({Program.songs[s].artist})");
-        int songIndex = Program.InputInt(0, Program.songs.Count);
-        for (int d = 0; d < Program.songs[songIndex].chartPaths.Length; d++)
-            Console.WriteLine($"{d}: {Program.songs[songIndex].chartNames[d]}");
-        int diff = int.Parse(Console.ReadLine());
+        Console.Clear();
         Console.WriteLine("Loading...");
-        List<string> dataList = [.. File.ReadAllText(Program.songs[songIndex].chartPaths[diff]).Split("\r\n")];
+        List<string> dataList = [.. File.ReadAllText(Program.songs[Program.selectedSong].chartPaths[Program.selectedDifficulty]).Split("\r\n")];
         int l = dataList.IndexOf("[HitObjects]");
         for (int i = 0; i <= l; i++)
             dataList.RemoveAt(0);

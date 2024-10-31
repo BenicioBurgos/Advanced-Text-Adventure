@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Numerics;
 
 namespace Advanced_Text_Adventure
 {
@@ -7,14 +8,14 @@ namespace Advanced_Text_Adventure
         static readonly string[] shades = [" ", "░", "▒", "▓", "█"];
         static readonly int[] consoleHues = [354, 54, 116, 180, 221, 307];
 
-        public static void DrawImage(string name)
+        public static void DrawImage(string path, int size)
         {
-            Bitmap image = new(Directory.GetCurrentDirectory() + "/Images/" + name + ".png");
-            for (int y = 0; y < image.Height; y++)
+            Bitmap image = new(path);
+            for (int y = 0; y < size; y++)
             {
-                for (int x = 0; x < image.Width; x++)
+                for (int x = 0; x < size; x++)
                 {
-                    Color color = image.GetPixel(x, y);
+                    Color color = image.GetPixel(x * (image.Height + (image.Width - image.Height) / 2) / size, y * image.Height / size);
                     int saturation = (int)MathF.Round((1 - MathF.Min(MathF.Min(color.R, color.G), color.B) / 255f) * (shades.Length - 1));
                     float value = MathF.Max(MathF.Max(color.R, color.G), color.B) / 255f;
                     if (MathF.Max(MathF.Max(color.R, color.G), color.B) < 100)

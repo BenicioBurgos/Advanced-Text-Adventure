@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -12,12 +13,12 @@ namespace Advanced_Text_Adventure
 
         public static readonly string dataPath = Directory.GetCurrentDirectory() + "/Data/";
         static readonly int[] inputIds = [68, 70, 74, 75];
-        static readonly int[] menuInputIds = [38, 40, 13];
+        static readonly int[] menuInputIds = [38, 40, 13, 27];
         static readonly int height = 15;
         static readonly string[] menuOptions = ["Play", "Import", "Settings", "Quit"];
 
-        public static bool[] menuInputsDown = [false, false, false];
-        public static bool[] menuInputs = [false, false, false];
+        public static bool[] menuInputsDown = [false, false, false, false];
+        public static bool[] menuInputs = [false, false, false, false];
         public static bool[] inputsDown = [false, false, false, false];
         public static bool[] inputs = [false, false, false, false];
         public static Stopwatch stopwatch = new();
@@ -36,16 +37,20 @@ namespace Advanced_Text_Adventure
         public static float scrollSpeed = 1.8f;
         public static List<Song> songs;
         public static int selectedSong;
+        public static int selectedDifficulty;
         public static int menuPos = 0;
 
         static void Main(string[] args)
         {
             Console.CursorVisible = false;
             LoadSongs();
-            Thread getInputs = new(new ThreadStart(GetInputs));
+            Thread getInputs = new(new ThreadStart(GetMenuInputs));
             getInputs.Start();
             while (true)
             {
+            home:
+                Console.Clear();
+                menuPos = 0;
                 bool keyPressed = true;
                 while (true)
                 {
@@ -82,162 +87,225 @@ namespace Advanced_Text_Adventure
                 switch (menuPos)
                 {
                     case 0:
-                        keyPressed = true;
                         menuPos = 0;
+                        int diffs = 0;
                         while (true)
                         {
-                            if (menuInputsDown[0])
+                            keyPressed = true;
+                            bool play = false;
+                            while (true)
                             {
-                                menuPos = (int)MathF.Max(menuPos - 1, 0);
-                                keyPressed = true;
-                            }
-                            else if (menuInputsDown[1])
-                            {
-                                menuPos = (int)MathF.Min(menuPos + 1, songs.Count - 1);
-                                keyPressed = true;
-                            }
-                            else if (menuInputsDown[2])
-                                break;
-                            if (keyPressed)
-                            {
-                                for (int s = 0; s < 5; s++)
+                                if (menuInputsDown[0])
                                 {
-                                    Console.SetCursorPosition(0, s);
-                                    ClearLine();
-                                    if (menuPos + (s - 2) >= 0 && menuPos + (s - 2) <= songs.Count - 1)
-                                    {
-                                        Console.ForegroundColor = s switch
-                                        {
-                                            0 or 4 => ConsoleColor.DarkGray,
-                                            1 or 3 => ConsoleColor.Gray,
-                                            _ => ConsoleColor.White,
-                                        };
-                                        if (s != 2)
-                                            Console.Write($"  {songs[menuPos + (s - 2)].name} ({songs[menuPos + (s - 2)].artist})");
-                                        else
-                                            Console.Write($"> {songs[menuPos].name} ({songs[menuPos].artist})");
-                                    }
+                                    menuPos = (int)MathF.Max(menuPos - 1, 0);
+                                    keyPressed = true;
                                 }
-                                keyPressed = false;
+                                else if (menuInputsDown[1])
+                                {
+                                    menuPos = (int)MathF.Min(menuPos + 1, songs.Count - 1);
+                                    keyPressed = true;
+                                }
+                                else if (menuInputsDown[2])
+                                {
+                                    keyPressed = true;
+                                    break;
+                                }
+                                else if (menuInputsDown[3])
+                                    goto home;
+                                if (keyPressed)
+                                {
+                                    Console.SetCursorPosition(0, 0);
+                                    if (songs[menuPos].imagePath is not null)
+                                        ImageGenerator.DrawImage(songs[menuPos].imagePath, 9);
+                                    for (int s = 0; s < 7; s++)
+                                    {
+                                        Console.SetCursorPosition(19, s + 1);
+                                        ClearLine();
+                                        if (menuPos + (s - 3) >= 0 && menuPos + (s - 3) <= songs.Count - 1)
+                                        {
+                                            Console.ForegroundColor = s switch
+                                            {
+                                                3 => ConsoleColor.White,
+                                                2 or 4 => ConsoleColor.Gray,
+                                                _ => ConsoleColor.DarkGray,
+                                            };
+                                            if (s != 3)
+                                                Console.Write($"  {songs[menuPos + (s - 3)].name} ({songs[menuPos + (s - 3)].artist})");
+                                            else
+                                                Console.Write($"> {songs[menuPos].name} ({songs[menuPos].artist})");
+                                        }
+                                    }
+                                    Console.ForegroundColor = ConsoleColor.Gray;
+                                    Console.SetCursorPosition(0, 10);
+                                    for (int d = 0; d < songs[menuPos].chartPaths.Length; d++)
+                                    {
+                                        ClearLine();
+                                        Console.WriteLine(songs[menuPos].chartNames[d]);
+                                    }
+                                    for (int e = 0; e < diffs - songs[menuPos].chartPaths.Length; e++)
+                                        ClearLine(true);
+                                    diffs = songs[menuPos].chartPaths.Length;
+                                    keyPressed = false;
+                                }
+                            }
+                            selectedDifficulty = 0;
+                            menuInputsDown[2] = false;
+                            while (true)
+                            {
+                                if (menuInputsDown[0])
+                                {
+                                    selectedDifficulty = (int)MathF.Max(selectedDifficulty - 1, 0);
+                                    keyPressed = true;
+                                }
+                                else if (menuInputsDown[1])
+                                {
+                                    selectedDifficulty = (int)MathF.Min(selectedDifficulty + 1, songs[menuPos].chartPaths.Length - 1);
+                                    keyPressed = true;
+                                }
+                                else if (menuInputsDown[2])
+                                {
+                                    play = true;
+                                    break;
+                                }
+                                else if (menuInputsDown[3])
+                                {
+                                    menuInputsDown[3] = false;
+                                    break;
+                                }
+                                if (keyPressed)
+                                {
+                                    for (int d = 0; d < songs[menuPos].chartPaths.Length; d++)
+                                    {
+                                        Console.SetCursorPosition(0, d + 10);
+                                        if (d == selectedDifficulty)
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        else
+                                            Console.ForegroundColor = ConsoleColor.DarkGray;
+                                        Console.Write(songs[menuPos].chartNames[d]);
+                                    }
+                                    keyPressed = false;
+                                }
+                            }
+                            if (play)
+                            {
+                                selectedSong = menuPos;
+                                ManiaConverter.ReadData();
+                                DrawStats();
+                                WMPLib.WindowsMediaPlayer wplayer = new();
+                                wplayer.URL = songs[selectedSong].path + "/" + songs[selectedSong].audioFile;
+                                wplayer.settings.volume = 15;
+                                wplayer.controls.play();
+                                wplayer.controls.currentPosition = 0;
+                                stopwatch.Start();
+                                while (true)
+                                {
+                                    timer = stopwatch.ElapsedMilliseconds - 180;
+                                    for (int i = 0; i < inputIds.Length; i++)
+                                    {
+                                        if (GetAsyncKeyState(inputIds[i]) != 0)
+                                        {
+                                            inputsDown[i] = !inputs[i];
+                                            inputs[i] = true;
+                                        }
+                                        else
+                                            inputsDown[i] = inputs[i] = false;
+                                    }
+                                    if (noteToSpawn < noteTimes.Count && noteTimes[noteToSpawn] - (50 / scrollSpeed) * height - 50 < timer)
+                                    {
+                                        notes.Add(new(noteTimes[noteToSpawn], noteLanes[noteToSpawn], noteHolds[noteToSpawn]));
+                                        noteToSpawn++;
+                                    }
+                                    List<string> noteRender = [];
+                                    for (int l = 0; l < height + 3; l++)
+                                        noteRender.Add("                ");
+                                    noteRender[height] = "";
+                                    foreach (bool input in inputs)
+                                    {
+                                        if (input)
+                                            noteRender[height] += "  ▓▓";
+                                        else
+                                            noteRender[height] += "  ░░";
+                                    }
+                                    foreach (Note note in notes)
+                                    {
+                                        Vector2 pos = new(note.lane * 4 + 2, height - (int)MathF.Min((note.time - timer) / (50 / scrollSpeed), height));
+                                        if (note.holding)
+                                        {
+                                            pos.Y = height;
+                                            if (!inputs[note.lane] || note.time + note.holdTime + 125 < timer)
+                                                removeNotes.Add(note);
+                                        }
+                                        else if (note.time + 125 < timer)
+                                            removeNotes.Add(note);
+                                        else if (inputsDown[note.lane])
+                                        {
+                                            bool first = true;
+                                            foreach (Note n in notes)
+                                            {
+                                                if (n.lane == note.lane && n.time < note.time)
+                                                {
+                                                    first = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (first && MathF.Abs(note.time - timer) <= 250)
+                                            {
+                                                if (note.holdTime == 0)
+                                                    removeNotes.Add(note);
+                                                else
+                                                {
+                                                    note.holding = true;
+                                                    JudgeTiming(timer - note.time);
+                                                }
+                                            }
+                                        }
+                                        else if (pos.Y < height + 3)
+                                            noteRender[(int)pos.Y] = ReplaceChar(noteRender[(int)pos.Y], (int)pos.X, "██");
+                                        if (note.holdTime > 0)
+                                        {
+                                            int holdEnd = height - (int)MathF.Min((note.time + note.holdTime - timer) / (50 / scrollSpeed), height);
+                                            int yAt = (int)pos.Y;
+                                            while (yAt > 0)
+                                            {
+                                                yAt--;
+                                                if (((yAt >= holdEnd || yAt == pos.Y - 1) && yAt < height + 3))
+                                                    noteRender[yAt] = ReplaceChar(noteRender[yAt], (int)pos.X, "░░");
+                                                else break;
+                                            }
+                                        }
+                                    }
+                                    Console.SetCursorPosition(0, 0);
+                                    Console.Write(string.Join("\r\n", [.. noteRender]));
+                                    foreach (Note note in removeNotes)
+                                    {
+                                        float delta;
+                                        if (!note.holding)
+                                            delta = timer - note.time;
+                                        else
+                                            delta = timer - (note.time + note.holdTime);
+                                        JudgeTiming(delta, note.holding);
+                                        notes.Remove(note);
+                                    }
+                                    removeNotes = [];
+                                }
                             }
                         }
-                        Console.ReadLine();
-                        for (int d = 0; d < songs[menuPos].chartPaths.Length; d++)
-                            Console.WriteLine($"{d}: {songs[menuPos].chartNames[d]}");
-                        int diff = int.Parse(Console.ReadLine());
-                        break;
                     case 1:
                         ManiaConverter.ImportSong();
                         break;
+                    case 3:
+                        Environment.Exit(0);
+                        break;
                 }
-                //ManiaConverter.ReadData();
-                //DrawStats();
-                //WMPLib.WindowsMediaPlayer wplayer = new();
-                //wplayer.URL = songs[selectedSong].audioPath + "/audio.mp3";
-                //wplayer.settings.volume = 15;
-                //wplayer.controls.play();
-                //wplayer.controls.currentPosition = 0;
-                //stopwatch.Start();
-                //while (true)
-                //{
-                //    timer = stopwatch.ElapsedMilliseconds - 180;
-                //    if (noteToSpawn < noteTimes.Count && noteTimes[noteToSpawn] - (50 / scrollSpeed) * height - 50 < timer)
-                //    {
-                //        notes.Add(new(noteTimes[noteToSpawn], noteLanes[noteToSpawn], noteHolds[noteToSpawn]));
-                //        noteToSpawn++;
-                //    }
-                //    List<string> noteRender = [];
-                //    for (int l = 0; l < height + 3; l++)
-                //        noteRender.Add("                ");
-                //    noteRender[height] = "";
-                //    foreach (bool input in inputs)
-                //    {
-                //        if (input)
-                //            noteRender[height] += "  ▓▓";
-                //        else
-                //            noteRender[height] += "  ░░";
-                //    }
-                //    foreach (Note note in notes)
-                //    {
-                //        Vector2 pos = new(note.lane * 4 + 2, height - (int)MathF.Min((note.time - timer) / (50 / scrollSpeed), height));
-                //        if (note.holding)
-                //        {
-                //            pos.Y = height;
-                //            if (!inputs[note.lane] || note.time + note.holdTime + 125 < timer)
-                //                removeNotes.Add(note);
-                //        }
-                //        else if (note.time + 125 < timer)
-                //            removeNotes.Add(note);
-                //        else if (inputsDown[note.lane])
-                //        {
-                //            bool first = true;
-                //            foreach (Note n in notes)
-                //            {
-                //                if (n.lane == note.lane && n.time < note.time)
-                //                {
-                //                    first = false;
-                //                    break;
-                //                }
-                //            }
-                //            if (first && MathF.Abs(note.time - timer) <= 250)
-                //            {
-                //                if (note.holdTime == 0)
-                //                    removeNotes.Add(note);
-                //                else
-                //                {
-                //                    note.holding = true;
-                //                    JudgeTiming(timer - note.time);
-                //                }
-                //            }
-                //        }
-                //        else if (pos.Y < height + 3)
-                //            noteRender[(int)pos.Y] = ReplaceChar(noteRender[(int)pos.Y], (int)pos.X, "██");
-                //        if (note.holdTime > 0)
-                //        {
-                //            int holdEnd = height - (int)MathF.Min((note.time + note.holdTime - timer) / (50 / scrollSpeed), height);
-                //            int yAt = (int)pos.Y;
-                //            while (yAt > 0)
-                //            {
-                //                yAt--;
-                //                if (((yAt >= holdEnd || yAt == pos.Y - 1) && yAt < height + 3))
-                //                    noteRender[yAt] = ReplaceChar(noteRender[yAt], (int)pos.X, "░░");
-                //                else break;
-                //            }
-                //        }
-                //    }
-                //    Console.SetCursorPosition(0, 0);
-                //    Console.Write(string.Join("\r\n", [.. noteRender]));
-                //    foreach (Note note in removeNotes)
-                //    {
-                //        float delta;
-                //        if (!note.holding)
-                //            delta = timer - note.time;
-                //        else
-                //            delta = timer - (note.time + note.holdTime);
-                //        JudgeTiming(delta, note.holding);
-                //        notes.Remove(note);
-                //    }
-                //    removeNotes = [];
-                //}
             }
         }
 
-        public static async void GetInputs()
+        public static async void GetMenuInputs()
         {
             await Task.Run(() =>
             {
                 while (true)
                 {
-                    for (int i = 0; i < inputIds.Length; i++)
-                    {
-                        if (GetAsyncKeyState(inputIds[i]) != 0)
-                        {
-                            inputsDown[i] = !inputs[i];
-                            inputs[i] = true;
-                        }
-                        else
-                            inputsDown[i] = inputs[i] = false;
-                    }
                     for (int i = 0; i < menuInputIds.Length; i++)
                     {
                         if (GetAsyncKeyState(menuInputIds[i]) != 0)
@@ -356,7 +424,7 @@ namespace Advanced_Text_Adventure
                 int metadataIndex = songData.IndexOf("[Metadata]");
                 string songName = songData[metadataIndex + 1].Split(":")[1];
                 string artistName = songData[metadataIndex + 3].Split(":")[1];
-                string audioPath = songData[songData.IndexOf("[General]") + 1].Split(":")[1];
+                string audioFile = songData[songData.IndexOf("[General]") + 1].Split(": ")[1];
                 string[] difficultyPaths = Directory.GetFiles(songPaths[i], "*.osu");
                 string[] difficultyNames = new string[difficultyPaths.Length];
                 for (int d = 0; d < difficultyPaths.Length; d++)
@@ -364,15 +432,24 @@ namespace Advanced_Text_Adventure
                     List<string> diffData = [.. File.ReadAllText(difficultyPaths[d]).Split("\r\n")];
                     difficultyNames[d] = diffData[diffData.IndexOf("[Metadata]") + 6].Split(":")[1];
                 }
-                songs.Add(new(songName, artistName, songPaths[i], audioPath, difficultyPaths, difficultyNames));
+                string imageName = "none";
+                if (songData[songData.IndexOf("[Events]") + 2].Split("\"").Length == 3)
+                    imageName = songData[songData.IndexOf("[Events]") + 2].Split("\"")[1];
+                string? imagePath = null;
+                if (File.Exists(songPaths[i] + "/" + imageName))
+                    imagePath = songPaths[i] + "/" + imageName;
+                songs.Add(new(songName, artistName, songPaths[i], audioFile, difficultyPaths, difficultyNames, imagePath));
             }
         }
 
-        public static void ClearLine()
+        public static void ClearLine(bool nextLine = false)
         {
-            int startY = Console.GetCursorPosition().Top;
-            Console.Write(new string(' ', Console.WindowWidth));
-            Console.SetCursorPosition(0, startY);
+            Vector2 startPos = new(Console.GetCursorPosition().Left, Console.GetCursorPosition().Top);
+            Console.Write(new string(' ', Console.WindowWidth - (int)startPos.X));
+            if (!nextLine)
+                Console.SetCursorPosition((int)startPos.X, (int)startPos.Y);
+            else 
+                Console.SetCursorPosition((int)startPos.X, (int)startPos.Y + 1);
         }
     }
 
@@ -384,13 +461,14 @@ namespace Advanced_Text_Adventure
         public bool holding = holding;
     }
 
-    class Song(string name, string artist, string path, string audioPath, string[] chartPaths, string[] chartNames)
+    class Song(string name, string artist, string path, string audioFile, string[] chartPaths, string[] chartNames, string? imagePath)
     {
         public string name = name;
         public string artist = artist;
         public string path = path;
-        public string audioPath = audioPath;
+        public string audioFile = audioFile;
         public string[] chartPaths = chartPaths;
         public string[] chartNames = chartNames;
+        public string? imagePath = imagePath;
     }
 }
