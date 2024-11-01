@@ -6,62 +6,97 @@ namespace Advanced_Text_Adventure
     internal class ImageGenerator
     {
         static readonly string[] shades = [" ", "░", "▒", "▓", "█"];
-        static readonly int[] consoleHues = [354, 54, 116, 180, 221, 307];
+
+        public static Pixel[] colors = [new(231, 72, 86), new(249, 241, 165), new(22, 298, 12), new(97, 214, 214), new(59, 120, 255), new(180, 0, 158), new(197, 15, 31), new(193, 156, 0), new(19, 161, 14), new(58, 150, 221), new(0, 55, 218), new(136, 23, 152)];
+        public static int[] grays = [204, 118, 12, 242];
+        public static ConsoleColor[] consoleColors = [ConsoleColor.Red, ConsoleColor.Yellow, ConsoleColor.Green, ConsoleColor.Cyan, ConsoleColor.Blue, ConsoleColor.Magenta, ConsoleColor.DarkRed, ConsoleColor.DarkYellow, ConsoleColor.DarkGreen, ConsoleColor.DarkCyan, ConsoleColor.DarkBlue, ConsoleColor.DarkMagenta];
+        public static ConsoleColor[] consoleGrays = [ConsoleColor.Gray, ConsoleColor.DarkGray, ConsoleColor.Black, ConsoleColor.White];
+        public static string currentShade;
+        public static bool light;
 
         public static void DrawImage(string path, int size)
         {
             Bitmap image = new(path);
             for (int y = 0; y < size; y++)
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < size * 2; x++)
                 {
-                    Color color = image.GetPixel(x * (image.Height + (image.Width - image.Height) / 2) / size, y * image.Height / size);
-                    int saturation = (int)MathF.Round((1 - MathF.Min(MathF.Min(color.R, color.G), color.B) / 255f) * (shades.Length - 1));
-                    float value = MathF.Max(MathF.Max(color.R, color.G), color.B) / 255f;
-                    if (MathF.Max(MathF.Max(color.R, color.G), color.B) < 100)
-                        Console.ForegroundColor = ConsoleColor.Black;
-                    else
-                        Console.ForegroundColor = GetColor(color.GetHue(), value < 0.7f);
-                    Console.Write(shades[saturation]);
-                    Console.Write(shades[saturation]);
+                    Color color = image.GetPixel(x * (image.Height + (image.Width - image.Height) / 2) / size / 2, y * image.Height / size);
+                    Console.ForegroundColor = GetColor(color);
+                    if (light) Console.BackgroundColor = ConsoleColor.White;
+                    else Console.BackgroundColor = ConsoleColor.Black;
+                    Console.Write(currentShade);
                 }
+                Console.BackgroundColor = ConsoleColor.Black;
                 Console.Write(" \r\n");
             }
-            Console.ForegroundColor = ConsoleColor.Black;
+            Console.BackgroundColor = ConsoleColor.Black;
         }
 
-        public static ConsoleColor GetColor(float hue, bool dark)
+        public static ConsoleColor GetColor(Color color)
         {
-            if (!dark)
+            float minDistance = 100000;
+            int minIndex = 0;
+            int shade = 0;
+            if (MathF.Max(MathF.Max(color.R, color.G), color.B) - MathF.Min(MathF.Min(color.R, color.G), color.B) < 20)
             {
-                if (hue >= 330 || hue <= 24)
-                    return ConsoleColor.Red;
-                else if (hue >= 24 && hue <= 85)
-                    return ConsoleColor.Yellow;
-                else if (hue >= 85 && hue <= 148)
-                    return ConsoleColor.Green;
-                else if (hue >= 148 && hue <= 200)
-                    return ConsoleColor.Cyan;
-                else if (hue >= 200 && hue <= 264)
-                    return ConsoleColor.Blue;
-                else
-                    return ConsoleColor.Magenta;
+                for (int m = 1; m <= 4; m++)
+                {
+                    for (int c = 0; c < grays.Length; c++)
+                    {
+                        float distance = MathF.Abs(grays[c] / m - color.R);
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            minIndex = c;
+                            shade = 5 - m;
+                            light = false;
+                        }
+                    }
+                }
+                currentShade = shades[shade];
+                return consoleGrays[minIndex];
             }
             else
             {
-                if (hue >= 330 || hue <= 24)
-                    return ConsoleColor.DarkRed;
-                else if (hue >= 24 && hue <= 85)
-                    return ConsoleColor.DarkYellow;
-                else if (hue >= 85 && hue <= 148)
-                    return ConsoleColor.DarkGreen;
-                else if (hue >= 148 && hue <= 200)
-                    return ConsoleColor.DarkCyan;
-                else if (hue >= 200 && hue <= 264)
-                    return ConsoleColor.DarkBlue;
-                else
-                    return ConsoleColor.DarkMagenta;
+                for (int m = 1; m <= 4; m++)
+                {
+                    for (int c = 0; c < colors.Length; c++)
+                    {
+                        float distance = Vector3.Distance(Vector3.Lerp(new(colors[c].r, colors[c].g, colors[c].b), Vector3.One * 12, 1 - 0.25f * m), new(color.R, color.G, color.B));
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            minIndex = c;
+                            shade = m;
+                            light = false;
+                        }
+                    }
+                }
+                for (int m = 1; m <= 3; m++)
+                {
+                    for (int c = 0; c < colors.Length; c++)
+                    {
+                        float distance = Vector3.Distance(Vector3.Lerp(new(colors[c].r, colors[c].g, colors[c].b), Vector3.One * 242, 1 - 0.25f * m), new(color.R, color.G, color.B));
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            minIndex = c;
+                            shade = m;
+                            light = true;
+                        }
+                    }
+                }
+                currentShade = shades[shade];
+                return consoleColors[minIndex];
             }
         }
+    }
+
+    class Pixel(int r, int g, int b)
+    {
+        public int r = r;
+        public int g = g;
+        public int b = b;
     }
 }
