@@ -1,8 +1,10 @@
 ﻿using System.IO.Compression;
+using System.Windows.Forms;
 
+[assembly: System.Runtime.Versioning.SupportedOSPlatform("windows")]
 namespace Advanced_Text_Adventure
 {
-    public class ManiaConverter
+    internal class ManiaConverter
     {
         public static void ReadData()
         {
@@ -49,8 +51,7 @@ namespace Advanced_Text_Adventure
                                 timings.Add(int.Parse(timing));
                             }
                             break;
-                        case 3:
-                        case 4:
+                        case 3: case 4:
                             if (line[chara] == ',')
                                 phase++;
                             break;
@@ -78,7 +79,8 @@ namespace Advanced_Text_Adventure
 
         public static void ImportSong()
         {
-            Console.WriteLine("Drag and drop an osz file into the window to import a song");
+            Console.WriteLine("Drag and drop an osz file into the window / paste the file path to one to import a song");
+            Program.EmptyInputBuffer();
             string newPath = Console.ReadLine();
             string zipPath = newPath.Replace("\"", "");
             if (File.Exists(zipPath))
@@ -87,12 +89,12 @@ namespace Advanced_Text_Adventure
                 ZipFile.ExtractToDirectory(zipPath, Program.dataPath + folderName, true);
                 Program.LoadSongs();
                 Console.WriteLine("Import successful");
-                Console.ReadLine();
+                Thread.Sleep(1000);
             }
             else
             {
                 Console.WriteLine("Invalid path");
-                Console.ReadLine();
+                Thread.Sleep(1000);
             }
         }
     }

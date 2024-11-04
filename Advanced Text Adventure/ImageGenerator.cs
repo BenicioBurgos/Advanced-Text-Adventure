@@ -14,23 +14,26 @@ namespace Advanced_Text_Adventure
         public static string currentShade;
         public static bool light;
 
-        public static void DrawImage(string path, int size)
+        public static void DrawImage(string? path, int size)
         {
-            Bitmap image = new(path);
-            for (int y = 0; y < size; y++)
+            if (path is not null)
             {
-                for (int x = 0; x < size * 2; x++)
+                Bitmap image = new(path);
+                for (int y = 0; y < size; y++)
                 {
-                    Color color = image.GetPixel(x * (image.Height + (image.Width - image.Height) / 2) / size / 2, y * image.Height / size);
-                    Console.ForegroundColor = GetColor(color);
-                    if (light) Console.BackgroundColor = ConsoleColor.White;
-                    else Console.BackgroundColor = ConsoleColor.Black;
-                    Console.Write(currentShade);
+                    for (int x = 0; x < size * 2; x++)
+                    {
+                        Color color = image.GetPixel(x * (image.Height + (image.Width - image.Height) / 2) / size / 2, y * image.Height / size);
+                        Console.ForegroundColor = GetColor(color);
+                        if (light) Console.BackgroundColor = ConsoleColor.White;
+                        else Console.BackgroundColor = ConsoleColor.Black;
+                        Console.Write(currentShade);
+                    }
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.Write(" \r\n");
                 }
                 Console.BackgroundColor = ConsoleColor.Black;
-                Console.Write(" \r\n");
             }
-            Console.BackgroundColor = ConsoleColor.Black;
         }
 
         public static ConsoleColor GetColor(Color color)
