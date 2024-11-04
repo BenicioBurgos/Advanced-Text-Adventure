@@ -155,8 +155,7 @@ namespace Advanced_Text_Adventure
                                 if (keyPressed)
                                 {
                                     Console.SetCursorPosition(0, 0);
-                                    if (songs[menuPos].imagePath is not null)
-                                        ImageGenerator.DrawImage(songs[menuPos].imagePath, songSelectSize);
+                                    ImageGenerator.DrawImage(songs[menuPos].imagePath, songSelectSize);
                                     int middle = (int)MathF.Floor((songSelectSize - 2) / 2f);
                                     for (int s = 0; s < songSelectSize - 2; s++)
                                     {

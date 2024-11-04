@@ -16,24 +16,22 @@ namespace Advanced_Text_Adventure
 
         public static void DrawImage(string? path, int size)
         {
-            if (path is not null)
+            path ??= Directory.GetCurrentDirectory() + "/Images/Placeholder.png";
+            Bitmap image = new(path);
+            for (int y = 0; y < size; y++)
             {
-                Bitmap image = new(path);
-                for (int y = 0; y < size; y++)
+                for (int x = 0; x < size * 2; x++)
                 {
-                    for (int x = 0; x < size * 2; x++)
-                    {
-                        Color color = image.GetPixel(x * (image.Height + (image.Width - image.Height) / 2) / size / 2, y * image.Height / size);
-                        Console.ForegroundColor = GetColor(color);
-                        if (light) Console.BackgroundColor = ConsoleColor.White;
-                        else Console.BackgroundColor = ConsoleColor.Black;
-                        Console.Write(currentShade);
-                    }
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    Console.Write(" \r\n");
+                    Color color = image.GetPixel(x * (image.Height + (image.Width - image.Height) / 2) / size / 2, y * image.Height / size);
+                    Console.ForegroundColor = GetColor(color);
+                    if (light) Console.BackgroundColor = ConsoleColor.White;
+                    else Console.BackgroundColor = ConsoleColor.Black;
+                    Console.Write(currentShade);
                 }
                 Console.BackgroundColor = ConsoleColor.Black;
+                Console.Write(" \r\n");
             }
+            Console.BackgroundColor = ConsoleColor.Black;
         }
 
         public static ConsoleColor GetColor(Color color)
