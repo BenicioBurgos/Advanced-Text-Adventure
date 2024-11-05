@@ -79,6 +79,7 @@ namespace Advanced_Text_Adventure
 
         public static void ImportSong()
         {
+            Console.Title = "Importer";
             Console.WriteLine("Drag and drop an osz file into the window / paste the file path to one to import a song");
             Program.EmptyInputBuffer();
             string newPath = Console.ReadLine();

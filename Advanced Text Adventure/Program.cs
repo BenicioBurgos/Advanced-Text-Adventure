@@ -42,6 +42,7 @@ namespace Advanced_Text_Adventure
         public static int selectedDifficulty;
         public static int currentKeys;
         public static int menuPos;
+        public static int gameWidth;
 
         static void Main(string[] args)
         {
@@ -49,9 +50,11 @@ namespace Advanced_Text_Adventure
             getInputs.Start();
             WMPLib.WindowsMediaPlayer wplayer = new();
             int offset = 95;
-            float scrollSpeed = 1.8f;
-            int laneHeight = 20;
             int volume = 15;
+            float scrollSpeed = 1.8f;
+            int laneWidth = 2;
+            int laneHeight = 20;
+            int comboDistance = 5;
             int songSelectSize = 19;
             ConsoleColor noteColor = ConsoleColor.White;
             char[] chars1k = [' '];
@@ -67,9 +70,11 @@ namespace Advanced_Text_Adventure
             unsafe 
             {
                 Settings.settings.Add(new NumberSetting<int>("Music offset (ms)", &offset, 5, -5000, 5000));
-                Settings.settings.Add(new NumberSetting<float>("Scroll speed", &scrollSpeed, 0.1f, 0.1f, 3));
-                Settings.settings.Add(new NumberSetting<int>("Lane height", &laneHeight, 1, 2, 50));
                 Settings.settings.Add(new NumberSetting<int>("Music volume", &volume, 1, 1, 100));
+                Settings.settings.Add(new NumberSetting<float>("Scroll speed", &scrollSpeed, 0.1f, 0.1f, 5));
+                Settings.settings.Add(new NumberSetting<int>("Lane width", &laneWidth, 1, 1, 10));
+                Settings.settings.Add(new NumberSetting<int>("Lane height", &laneHeight, 1, 5, 50));
+                Settings.settings.Add(new NumberSetting<int>("Combo display Y position", &comboDistance, 1, 1, 50));
                 Settings.settings.Add(new NumberSetting<int>("Song select image size", &songSelectSize, 2, 3, 99));
                 Settings.settings.Add(new ColorSetting("Note color", &noteColor));
                 Settings.settings.Add(new CharArraySetting("1k bind", &chars1k));
@@ -92,6 +97,7 @@ namespace Advanced_Text_Adventure
                 wplayer.settings.volume = volume;
                 menuPos = 0;
                 bool keyPressed = true;
+                Console.Title = "Main Menu";
                 while (true)
                 {
                     if (menuInputsDown[0])
@@ -108,9 +114,12 @@ namespace Advanced_Text_Adventure
                         break;
                     if (keyPressed)
                     {
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.SetCursorPosition(0, 0);
+                        Console.Write(" _____                       _      _                       _\r\n/  __ \\                     | |    | |                     (_)\r\n| /  \\/ ___  _ __  ___  ___ | | ___| |_ __ ___   __ _ _ __  _  __ _ \r\n| |    / _ \\| '_ \\/ __|/ _ \\| |/ _ \\ | '_ ` _ \\ / _` | '_ \\| |/ _` |\r\n| \\__/\\ (_) | | | \\__ \\ (_) | |  __/_| | | | | | (_| | | | | | (_| |\r\n\\_____/\\___/|_| |_|___/\\___/|_|\\___(_)_| |_| |_|\\__,_|_| |_|_|\\__,_|");
                         for (int o = 0; o < menuOptions.Length; o++)
                         {
-                            Console.SetCursorPosition(0, o);
+                            Console.SetCursorPosition(34 - menuOptions[o].Length / 2, o + 7);
                             if (o == menuPos)
                                 Console.ForegroundColor = ConsoleColor.White;
                             else
@@ -131,6 +140,7 @@ namespace Advanced_Text_Adventure
                         int diffs = 0;
                         while (true)
                         {
+                            Console.Title = "Song Selection";
                             keyPressed = true;
                             bool play = false;
                             while (true)
@@ -255,10 +265,12 @@ namespace Advanced_Text_Adventure
                                 List<int> inputIds = [];
                                 foreach (char c in inputArrays[currentKeys - 1])
                                     inputIds.Add(VkKeyScan(c));
+                                gameWidth = currentKeys * (laneWidth + 2);
                                 DrawStats();
                                 string emptyRenderLine = "";
-                                for (int k = 0; k < currentKeys; k++)
-                                    emptyRenderLine += "    ";
+                                for (int s = 0; s < gameWidth; s++)
+                                    emptyRenderLine += " ";
+                                Console.Title = $"{songs[selectedSong].name} ({songs[selectedSong].artist}) - {songs[selectedSong].chartNames[selectedDifficulty]}";
                                 while (true)
                                 {
                                     timer = stopwatch.ElapsedMilliseconds - offset;
@@ -285,14 +297,17 @@ namespace Advanced_Text_Adventure
                                     noteRender[laneHeight] = "";
                                     for (int k = 0; k < currentKeys; k++)
                                     {
+                                        noteRender[laneHeight] += "  ";
                                         if (inputs[k])
-                                            noteRender[laneHeight] += "  ▓▓";
+                                            for (int b = 0; b < laneWidth; b++)
+                                                noteRender[laneHeight] += "▓";
                                         else
-                                            noteRender[laneHeight] += "  ░░";
+                                            for (int b = 0; b < laneWidth; b++)
+                                                noteRender[laneHeight] += "░";
                                     }
                                     foreach (Note note in notes)
                                     {
-                                        Vector2 pos = new(note.lane * 4 + 2, laneHeight - (int)MathF.Min((note.time - timer) / (50 / scrollSpeed), laneHeight));
+                                        Vector2 pos = new(gameWidth / currentKeys * note.lane + 2, laneHeight - (int)MathF.Min((note.time - timer) / (50 / scrollSpeed), laneHeight));
                                         if (note.holding)
                                         {
                                             pos.Y = laneHeight;
@@ -324,7 +339,8 @@ namespace Advanced_Text_Adventure
                                             }
                                         }
                                         else if (pos.Y < laneHeight + 3)
-                                            noteRender[(int)pos.Y] = ReplaceChar(noteRender[(int)pos.Y], (int)pos.X, "██");
+                                            for (int x = 0; x < laneWidth; x++)
+                                                noteRender[(int)pos.Y] = ReplaceChar(noteRender[(int)pos.Y], (int)pos.X + x, "█");
                                         if (note.holdTime > 0)
                                         {
                                             int holdEnd = laneHeight - (int)MathF.Min((note.time + note.holdTime - timer) / (50 / scrollSpeed), laneHeight);
@@ -333,11 +349,14 @@ namespace Advanced_Text_Adventure
                                             {
                                                 yAt--;
                                                 if ((yAt >= holdEnd || yAt == pos.Y - 1) && yAt < laneHeight + 3)
-                                                    noteRender[yAt] = ReplaceChar(noteRender[yAt], (int)pos.X, "░░");
+                                                    for (int x = 0; x < laneWidth; x++)
+                                                        noteRender[yAt] = ReplaceChar(noteRender[yAt], (int)pos.X + x, "░");
                                                 else break;
                                             }
                                         }
                                     }
+                                    string comboString = "x" + combo;
+                                    noteRender[(int)MathF.Min(comboDistance, laneHeight)] = ReplaceChar(noteRender[(int)MathF.Min(comboDistance, laneHeight)], gameWidth / 2 - comboString.Length / 2, comboString);
                                     Console.SetCursorPosition(0, 0);
                                     Console.ForegroundColor = noteColor;
                                     Console.Write(string.Join("\r\n", [.. noteRender]));
@@ -366,9 +385,15 @@ namespace Advanced_Text_Adventure
                                 }
                                 if (songComplete)
                                 {
+                                    Console.Title = "Results";
                                     Thread.Sleep(2000);
                                     Console.Clear();
                                     ImageGenerator.DrawImage(songs[selectedSong].imagePath, 25);
+                                    Console.ForegroundColor = ConsoleColor.White;
+                                    Console.SetCursorPosition(51, 1);
+                                    Console.Write($"{songs[selectedSong].name} ({songs[selectedSong].artist})");
+                                    Console.SetCursorPosition(51, 3);
+                                    Console.Write(songs[selectedSong].chartNames[selectedDifficulty]);
                                     int rank = 0;
                                     if (accuracy < 70) rank = 5;
                                     else if (accuracy < 80) rank = 4;
@@ -380,26 +405,26 @@ namespace Advanced_Text_Adventure
                                     string[] rankLines = ranks[rank].Split("\r\n");
                                     for (int l = 0; l < 7; l++)
                                     {
-                                        Console.SetCursorPosition(51, l + 1);
+                                        Console.SetCursorPosition(51, l + 5);
                                         Console.Write(rankLines[l]);
                                     }
                                     Console.ForegroundColor = ConsoleColor.White;
-                                    Console.SetCursorPosition(51, 9);
+                                    Console.SetCursorPosition(51, 13);
                                     Console.Write("Accuracy: " + accuracy + "%");
-                                    Console.SetCursorPosition(51, 11);
+                                    Console.SetCursorPosition(51, 15);
                                     Console.Write("Max combo: " + maxCombo);
                                     if (judgements[3] == 0)
                                     {
                                         Console.ForegroundColor = ConsoleColor.Cyan;
                                         Console.Write(" (FC)");
                                     }
-                                    Console.SetCursorPosition(51, 13);
-                                    Write("Perfect x " + judgements[0], 4, ConsoleColor.Yellow);
-                                    Console.SetCursorPosition(51, 15);
-                                    Write("Good x " + judgements[1], 4, ConsoleColor.Green);
                                     Console.SetCursorPosition(51, 17);
-                                    Write("Bad x " + judgements[2], 4, ConsoleColor.Red);
+                                    Write("Perfect x " + judgements[0], 4, ConsoleColor.Yellow);
                                     Console.SetCursorPosition(51, 19);
+                                    Write("Good x " + judgements[1], 4, ConsoleColor.Green);
+                                    Console.SetCursorPosition(51, 21);
+                                    Write("Bad x " + judgements[2], 4, ConsoleColor.Red);
+                                    Console.SetCursorPosition(51, 23);
                                     Write("Miss x " + judgements[3], 4, ConsoleColor.DarkRed);
                                     EmptyInputBuffer();
                                     Console.ReadLine();
@@ -476,19 +501,17 @@ namespace Advanced_Text_Adventure
 
         public static void DrawStats()
         {
-            int x = currentKeys * 4 + 2; 
+            int x = gameWidth + 1;
             Console.SetCursorPosition(x, 2);
             Write("Accuracy: " + accuracy + "%", 5);
             Console.SetCursorPosition(x, 4);
-            Write("Combo: " + combo, 4);
-            Console.SetCursorPosition(x, 6);
             if (judgements[1] + judgements[2] + judgements[3] == 0)
                 Write("AP", 0, ConsoleColor.DarkYellow);
             else if (judgements[3] == 0)
                 Write("FC", 0, ConsoleColor.DarkCyan);
             else
                 Console.Write("  ");
-            Console.SetCursorPosition(x, 8);
+            Console.SetCursorPosition(x, 6);
             if (hitDelta == 0)
                 Console.Write("     ");
             else if (hitDelta < 0)

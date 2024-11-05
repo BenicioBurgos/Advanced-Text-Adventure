@@ -11,6 +11,7 @@ namespace Advanced_Text_Adventure
 
         public static void DisplaySettings()
         {
+            Console.Title = "Settings";
             settingSelected = 0;
             WriteSettings();
             while (true)
