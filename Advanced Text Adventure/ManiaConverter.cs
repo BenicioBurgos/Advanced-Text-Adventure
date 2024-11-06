@@ -1,5 +1,4 @@
 ﻿using System.IO.Compression;
-using System.Windows.Forms;
 
 [assembly: System.Runtime.Versioning.SupportedOSPlatform("windows")]
 namespace Advanced_Text_Adventure
@@ -77,26 +76,38 @@ namespace Advanced_Text_Adventure
             Console.Clear();
         }
 
-        public static void ImportSong()
+        public static void ImportSong(bool delete)
         {
             Console.Title = "Importer";
             Console.WriteLine("Drag and drop an osz file into the window / paste the file path to one to import a song");
             Program.EmptyInputBuffer();
-            string newPath = Console.ReadLine();
+            string newPath = "" + Console.ReadLine();
             string zipPath = newPath.Replace("\"", "");
             if (File.Exists(zipPath))
             {
+                Console.WriteLine("Importing...");
                 string folderName = zipPath.Split("\\")[^1];
+                folderName = folderName.Remove(folderName.Length - 4, 4);
                 ZipFile.ExtractToDirectory(zipPath, Program.dataPath + folderName, true);
+                List<string> songPaths = [];
+                string[] difficultyPaths = Directory.GetFiles(Program.dataPath + folderName, "*.osu");
+                for (int d = 0; d < difficultyPaths.Length; d++)
+                {
+                    List<string> diffData = [.. File.ReadAllText(difficultyPaths[d]).Split("\r\n")];
+                    songPaths.Add(Program.dataPath + folderName + "\\" + diffData[diffData.IndexOf("[General]") + 1].Split(": ")[1]);
+                }
+                List<string> audioFiles = [.. Directory.GetFiles(Program.dataPath + folderName, "*.wav"), .. Directory.GetFiles(Program.dataPath + folderName, "*.ogg"), ..Directory.GetFiles(Program.dataPath + folderName, "*.mp3")];
+                foreach (string file in audioFiles)
+                    if (!songPaths.Contains(file))
+                        File.Delete(file);
                 Program.LoadSongs();
+                if (delete)
+                    File.Delete(zipPath);
                 Console.WriteLine("Import successful");
-                Thread.Sleep(1000);
             }
             else
-            {
                 Console.WriteLine("Invalid path");
-                Thread.Sleep(1000);
-            }
+            Thread.Sleep(1000);
         }
     }
 }

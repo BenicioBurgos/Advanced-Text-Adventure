@@ -23,6 +23,7 @@ namespace Advanced_Text_Adventure
             " ░▒▓██████▓▒░\r\n░▒▓█▓▒░░▒▓█▓▒░\r\n░▒▓█▓▒░\r\n░▒▓█▓▒░\r\n░▒▓█▓▒░\r\n░▒▓█▓▒░░▒▓█▓▒░\r\n ░▒▓██████▓▒░",
             "░▒▓███████▓▒░\r\n░▒▓█▓▒░░▒▓█▓▒░\r\n░▒▓█▓▒░░▒▓█▓▒░\r\n░▒▓█▓▒░░▒▓█▓▒░\r\n░▒▓█▓▒░░▒▓█▓▒░\r\n░▒▓█▓▒░░▒▓█▓▒░\r\n░▒▓███████▓▒░ ",
             ];
+        static readonly Dictionary<char, ConsoleColor> smallRankColors = [];
 
         public static bool[] menuInputsDown = [false, false, false, false, false, false];
         public static bool[] menuInputs = [false, false, false, false, false, false];
@@ -46,17 +47,25 @@ namespace Advanced_Text_Adventure
 
         static void Main(string[] args)
         {
+            smallRankColors.Add('P', ConsoleColor.Magenta);
+            smallRankColors.Add('S', ConsoleColor.Yellow);
+            smallRankColors.Add('A', ConsoleColor.Green);
+            smallRankColors.Add('B', ConsoleColor.DarkCyan);
+            smallRankColors.Add('C', ConsoleColor.DarkMagenta);
+            smallRankColors.Add('D', ConsoleColor.DarkRed);
+            smallRankColors.Add('-', ConsoleColor.DarkGray);
             Thread getInputs = new(new ThreadStart(GetMenuInputs));
             getInputs.Start();
             WMPLib.WindowsMediaPlayer wplayer = new();
             int offset = 95;
             int volume = 15;
-            float scrollSpeed = 1.8f;
-            int laneWidth = 2;
-            int laneHeight = 20;
-            int comboDistance = 5;
+            decimal scrollSpeed = 2;
+            int laneWidth = 6;
+            int laneHeight = 25;
+            int comboDistance = 10;
             int songSelectSize = 19;
             ConsoleColor noteColor = ConsoleColor.White;
+            bool deleteOsz = false;
             char[] chars1k = [' '];
             char[] chars2k = ['f', 'j'];
             char[] chars3k = ['f', 'j', 'k'];
@@ -71,12 +80,13 @@ namespace Advanced_Text_Adventure
             {
                 Settings.settings.Add(new NumberSetting<int>("Music offset (ms)", &offset, 5, -5000, 5000));
                 Settings.settings.Add(new NumberSetting<int>("Music volume", &volume, 1, 1, 100));
-                Settings.settings.Add(new NumberSetting<float>("Scroll speed", &scrollSpeed, 0.1f, 0.1f, 5));
+                Settings.settings.Add(new NumberSetting<decimal>("Scroll speed", &scrollSpeed, 0.1M, 0.1M, 5));
                 Settings.settings.Add(new NumberSetting<int>("Lane width", &laneWidth, 1, 1, 10));
                 Settings.settings.Add(new NumberSetting<int>("Lane height", &laneHeight, 1, 5, 50));
                 Settings.settings.Add(new NumberSetting<int>("Combo display Y position", &comboDistance, 1, 1, 50));
                 Settings.settings.Add(new NumberSetting<int>("Song select image size", &songSelectSize, 2, 3, 99));
                 Settings.settings.Add(new ColorSetting("Note color", &noteColor));
+                Settings.settings.Add(new BoolSetting("Delete osz on import", &deleteOsz));
                 Settings.settings.Add(new CharArraySetting("1k bind", &chars1k));
                 Settings.settings.Add(new CharArraySetting("2k binds", &chars2k));
                 Settings.settings.Add(new CharArraySetting("3k binds", &chars3k));
@@ -190,7 +200,9 @@ namespace Advanced_Text_Adventure
                                     for (int d = 0; d < songs[menuPos].chartPaths.Length; d++)
                                     {
                                         ClearLine();
-                                        Console.WriteLine(songs[menuPos].chartNames[d]);
+                                        Console.Write(songs[menuPos].chartNames[d] + " (");
+                                        Write("" + songs[menuPos].ranks[d], 0, smallRankColors[songs[menuPos].ranks[d]]);
+                                        Console.Write(" " + songs[menuPos].accuracies[d] + "%)\r\n");
                                     }
                                     for (int e = 0; e < diffs - songs[menuPos].chartPaths.Length; e++)
                                         ClearLine(true);
@@ -284,7 +296,7 @@ namespace Advanced_Text_Adventure
                                         else
                                             inputsDown[i] = inputs[i] = false;
                                     }
-                                    if (noteToSpawn < noteTimes.Count && noteTimes[noteToSpawn] - (50 / scrollSpeed) * laneHeight - 50 < timer)
+                                    if (noteToSpawn < noteTimes.Count && noteTimes[noteToSpawn] - (50 / (float)scrollSpeed) * laneHeight - 50 < timer)
                                     {
                                         notes.Add(new(noteTimes[noteToSpawn], noteLanes[noteToSpawn], noteHolds[noteToSpawn]));
                                         noteToSpawn++;
@@ -307,7 +319,7 @@ namespace Advanced_Text_Adventure
                                     }
                                     foreach (Note note in notes)
                                     {
-                                        Vector2 pos = new(gameWidth / currentKeys * note.lane + 2, laneHeight - (int)MathF.Min((note.time - timer) / (50 / scrollSpeed), laneHeight));
+                                        Vector2 pos = new(gameWidth / currentKeys * note.lane + 2, laneHeight - (int)MathF.Min((note.time - timer) / (50 / (float)scrollSpeed), laneHeight));
                                         if (note.holding)
                                         {
                                             pos.Y = laneHeight;
@@ -343,7 +355,7 @@ namespace Advanced_Text_Adventure
                                                 noteRender[(int)pos.Y] = ReplaceChar(noteRender[(int)pos.Y], (int)pos.X + x, "█");
                                         if (note.holdTime > 0)
                                         {
-                                            int holdEnd = laneHeight - (int)MathF.Min((note.time + note.holdTime - timer) / (50 / scrollSpeed), laneHeight);
+                                            int holdEnd = laneHeight - (int)MathF.Min((note.time + note.holdTime - timer) / (50 / (float)scrollSpeed), laneHeight);
                                             int yAt = (int)pos.Y;
                                             while (yAt > 0)
                                             {
@@ -401,6 +413,37 @@ namespace Advanced_Text_Adventure
                                     else if (accuracy < 95) rank = 2;
                                     else if (accuracy < 100) rank = 1;
                                     else rank = 0;
+                                    if (accuracy > songs[selectedSong].accuracies[selectedDifficulty])
+                                    {
+                                        songs[selectedSong].accuracies[selectedDifficulty] = accuracy;
+                                        var rankChar = rank switch
+                                        {
+                                            0 => 'P',
+                                            1 => 'S',
+                                            2 => 'A',
+                                            3 => 'B',
+                                            4 => 'C',
+                                            _ => 'D',
+                                        };
+                                        songs[selectedSong].ranks[selectedDifficulty] = rankChar;
+                                        StreamReader sr = new(songs[selectedSong].chartPaths[selectedDifficulty]);
+                                        List<string> dataList = [.. sr.ReadToEnd().Split("\r\n")];
+                                        sr.Close();
+                                        StreamWriter sw = new(songs[selectedSong].chartPaths[selectedDifficulty]);
+                                        if (dataList[2] == "[Score]")
+                                        {
+                                            dataList[3] = rankChar + "";
+                                            dataList[4] = accuracy + "";
+                                        }
+                                        else
+                                        {
+                                            dataList.Insert(2, "[Score]");
+                                            dataList.Insert(3, rankChar + "");
+                                            dataList.Insert(4, accuracy + "");
+                                        }
+                                        sw.Write(string.Join("\r\n", dataList));
+                                        sw.Close();
+                                    }
                                     Console.ForegroundColor = rankColors[rank];
                                     string[] rankLines = ranks[rank].Split("\r\n");
                                     for (int l = 0; l < 7; l++)
@@ -434,7 +477,7 @@ namespace Advanced_Text_Adventure
                             }
                         }
                     case 1:
-                        ManiaConverter.ImportSong();
+                        ManiaConverter.ImportSong(deleteOsz);
                         break;
                     case 2:
                         Settings.DisplaySettings();
@@ -522,11 +565,12 @@ namespace Advanced_Text_Adventure
 
         public static void Write(string text, int clearSpace = 0, ConsoleColor color = ConsoleColor.White)
         {
+            ConsoleColor startColor = Console.ForegroundColor;
             Console.ForegroundColor = color;
             Console.Write(text);
             for (int s = 0; s < clearSpace; s++)
                 Console.Write(" ");
-            Console.ForegroundColor = ConsoleColor.White;
+            Console.ForegroundColor = startColor;
         }
 
         static string ReplaceChar(string text, int index, string replacement)
@@ -572,13 +616,25 @@ namespace Advanced_Text_Adventure
                 string[] difficultyPaths = Directory.GetFiles(songPaths[i], "*.osu");
                 string[] difficultyNames = new string[difficultyPaths.Length];
                 string[] audioFiles = new string[difficultyPaths.Length];
-                int[] keyCounts = new int[difficultyPaths.Length]; 
+                int[] keyCounts = new int[difficultyPaths.Length];
+                char[] ranks = new char[difficultyPaths.Length];
+                float[] accuracies = new float[difficultyPaths.Length];
                 for (int d = 0; d < difficultyPaths.Length; d++)
                 {
                     List<string> diffData = [.. File.ReadAllText(difficultyPaths[d]).Split("\r\n")];
                     difficultyNames[d] = diffData[diffData.IndexOf("[Metadata]") + 6].Split(":")[1];
                     audioFiles[d] = diffData[diffData.IndexOf("[General]") + 1].Split(": ")[1];
                     keyCounts[d] = int.Parse(diffData[diffData.IndexOf("[Difficulty]") + 2].Split(":")[1]);
+                    if (diffData[2] == "[Score]")
+                    {
+                        ranks[d] = char.Parse(diffData[diffData.IndexOf("[Score]") + 1]);
+                        accuracies[d] = float.Parse(diffData[diffData.IndexOf("[Score]") + 2]);
+                    }
+                    else
+                    {
+                        ranks[d] = '-';
+                        accuracies[d] = 0;
+                    }
                 }
                 string imageName = "none";
                 if (songData[songData.IndexOf("[Events]") + 2].Split("\"").Length == 3)
@@ -586,7 +642,7 @@ namespace Advanced_Text_Adventure
                 string? imagePath = null;
                 if (File.Exists(songPaths[i] + "/" + imageName))
                     imagePath = songPaths[i] + "/" + imageName;
-                songs.Add(new(songName, artistName, songPaths[i], audioFiles, audioPrevTime, difficultyPaths, difficultyNames, keyCounts, imagePath));
+                songs.Add(new(songName, artistName, songPaths[i], audioFiles, audioPrevTime, difficultyPaths, difficultyNames, keyCounts, imagePath, ranks, accuracies));
             }
             songs.Sort((x, y) => x.name.CompareTo(y.name));
         }
@@ -616,7 +672,7 @@ namespace Advanced_Text_Adventure
         public bool holding = holding;
     }
 
-    class Song(string name, string artist, string path, string[] audioFiles, int audioPrevTime, string[] chartPaths, string[] chartNames, int[] keyCounts, string? imagePath)
+    class Song(string name, string artist, string path, string[] audioFiles, int audioPrevTime, string[] chartPaths, string[] chartNames, int[] keyCounts, string? imagePath, char[] ranks, float[] accuracies)
     {
         public string name = name;
         public string artist = artist;
@@ -627,5 +683,7 @@ namespace Advanced_Text_Adventure
         public string[] chartNames = chartNames;
         public int[] keyCounts = keyCounts;
         public string? imagePath = imagePath;
+        public char[] ranks = ranks;
+        public float[] accuracies = accuracies;
     }
 }

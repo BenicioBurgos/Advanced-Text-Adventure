@@ -112,7 +112,7 @@ namespace Advanced_Text_Adventure
     unsafe class ColorSetting(string name, ConsoleColor* color) : Setting(name)
     {
         public ConsoleColor* color = color;
-        List<ConsoleColor> colors = [ConsoleColor.White, ConsoleColor.Red, ConsoleColor.DarkRed, ConsoleColor.Yellow, ConsoleColor.DarkYellow, ConsoleColor.Green, ConsoleColor.DarkGreen, ConsoleColor.Cyan, ConsoleColor.DarkCyan, ConsoleColor.Blue, ConsoleColor.DarkBlue, ConsoleColor.Magenta, ConsoleColor.DarkMagenta];
+        readonly List<ConsoleColor> colors = [ConsoleColor.White, ConsoleColor.Red, ConsoleColor.DarkRed, ConsoleColor.Yellow, ConsoleColor.DarkYellow, ConsoleColor.Green, ConsoleColor.DarkGreen, ConsoleColor.Cyan, ConsoleColor.DarkCyan, ConsoleColor.Blue, ConsoleColor.DarkBlue, ConsoleColor.Magenta, ConsoleColor.DarkMagenta];
         
         public override void ChangeValue(bool increase)
         {
@@ -143,6 +143,39 @@ namespace Advanced_Text_Adventure
             }
             else
                 Program.Write("██\r\n", 0, *color);
+        }
+    }
+
+    unsafe class BoolSetting(string name, bool* setting) : Setting(name)
+    {
+        public bool* setting = setting;
+        
+        public override void ChangeValue(bool increase)
+        {
+            *setting = !*setting;
+        }
+
+        public override void Write(bool selected)
+        {
+            Program.ClearLine();
+            if (selected)
+            {
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write(name + ": < ");
+            }
+            else 
+            { 
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.Write(name + ": ");
+            }
+            if (*setting)
+                Console.Write("On");
+            else
+                Console.Write("Off");
+            if (selected)
+                Console.Write(" >\r\n");
+            else
+                Console.Write("\r\n");
         }
     }
 
