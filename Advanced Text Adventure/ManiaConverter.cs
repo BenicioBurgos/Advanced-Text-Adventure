@@ -83,31 +83,53 @@ namespace Advanced_Text_Adventure
             Program.EmptyInputBuffer();
             string newPath = "" + Console.ReadLine();
             string zipPath = newPath.Replace("\"", "");
-            if (File.Exists(zipPath))
+            string[] paths = [];
+            if (File.Exists(zipPath) && zipPath.Split(".")[^1] == "osz")
+                paths = [zipPath];
+            else if (Directory.Exists(zipPath))
+                paths = Directory.GetDirectories(zipPath + "\\");
+            if (paths.Length > 0)
             {
-                Console.WriteLine("Importing...");
-                string folderName = zipPath.Split("\\")[^1];
-                folderName = folderName.Remove(folderName.Length - 4, 4);
-                ZipFile.ExtractToDirectory(zipPath, Program.dataPath + folderName, true);
-                List<string> songPaths = [];
-                string[] difficultyPaths = Directory.GetFiles(Program.dataPath + folderName, "*.osu");
-                for (int d = 0; d < difficultyPaths.Length; d++)
+                foreach (string path in paths)
                 {
-                    List<string> diffData = [.. File.ReadAllText(difficultyPaths[d]).Split("\r\n")];
-                    songPaths.Add(Program.dataPath + folderName + "\\" + diffData[diffData.IndexOf("[General]") + 1].Split(": ")[1]);
+                    Console.WriteLine(path);
+                    Console.WriteLine("Importing...");
+                    string folderName = path.Split("\\")[^1];
+                    if (folderName[folderName.Length - 4] == '.')
+                    {
+                        folderName = folderName.Remove(folderName.Length - 4, 4);
+                        ZipFile.ExtractToDirectory(path, Program.dataPath + folderName, true);
+                    }
+                    else
+                        CopyDirectory(path, Directory.CreateDirectory(Program.dataPath + folderName).FullName);
+                    List<string> songPaths = [];
+                    string[] difficultyPaths = Directory.GetFiles(Program.dataPath + folderName, "*.osu");
+                    for (int d = 0; d < difficultyPaths.Length; d++)
+                    {
+                        List<string> diffData = [.. File.ReadAllText(difficultyPaths[d]).Split("\r\n")];
+                        songPaths.Add(Program.dataPath + folderName + "\\" + diffData[diffData.IndexOf("[General]") + 1].Split(": ")[1]);
+                    }
+                    List<string> audioFiles = [.. Directory.GetFiles(Program.dataPath + folderName, "*.wav"), .. Directory.GetFiles(Program.dataPath + folderName, "*.ogg"), .. Directory.GetFiles(Program.dataPath + folderName, "*.mp3")];
+                    foreach (string file in audioFiles)
+                        if (!songPaths.Contains(file))
+                            File.Delete(file);
+                    if (delete)
+                        File.Delete(path);
                 }
-                List<string> audioFiles = [.. Directory.GetFiles(Program.dataPath + folderName, "*.wav"), .. Directory.GetFiles(Program.dataPath + folderName, "*.ogg"), ..Directory.GetFiles(Program.dataPath + folderName, "*.mp3")];
-                foreach (string file in audioFiles)
-                    if (!songPaths.Contains(file))
-                        File.Delete(file);
                 Program.LoadSongs();
-                if (delete)
-                    File.Delete(zipPath);
                 Console.WriteLine("Import successful");
             }
             else
                 Console.WriteLine("Invalid path");
             Thread.Sleep(1000);
+        }
+
+        static void CopyDirectory(string sourcePath, string targetPath)
+        {
+            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+                Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
+            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+                File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
         }
     }
 }
