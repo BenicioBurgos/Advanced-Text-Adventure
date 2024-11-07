@@ -103,11 +103,9 @@ namespace Advanced_Text_Adventure
                 StreamReader sr = new(dataPath + "Settings");
                 foreach (Setting setting in Settings.settings)
                 {
-                    if (setting.GetType() == typeof(NumberSetting<>))
-                        Console.WriteLine("guh");
+                    Console.WriteLine(sr.ReadLine());
                 }
             }
-            Console.ReadLine();
             LoadSongs();
             while (true)
             {
@@ -267,12 +265,6 @@ namespace Advanced_Text_Adventure
                                 Console.CursorVisible = false;
                                 selectedSong = menuPos;
                                 ManiaConverter.ReadData();
-                                wplayer.URL = songs[selectedSong].path + "/" + songs[selectedSong].audioFiles[selectedDifficulty];
-                                wplayer.controls.play();
-                                wplayer.controls.currentPosition = 0;
-                                Stopwatch stopwatch = new();
-                                float timer;
-                                stopwatch.Start();
                                 int noteToSpawn = 0;
                                 List<Note> notes = [];
                                 List<Note> removeNotes = [];
@@ -293,6 +285,12 @@ namespace Advanced_Text_Adventure
                                 for (int s = 0; s < gameWidth; s++)
                                     emptyRenderLine += " ";
                                 Console.Title = $"{songs[selectedSong].name} ({songs[selectedSong].artist}) - {songs[selectedSong].chartNames[selectedDifficulty]}";
+                                wplayer.URL = songs[selectedSong].path + "/" + songs[selectedSong].audioFiles[selectedDifficulty];
+                                wplayer.controls.currentPosition = 0;
+                                wplayer.controls.play();
+                                Stopwatch stopwatch = new();
+                                float timer;
+                                stopwatch.Start();
                                 while (true)
                                 {
                                     timer = stopwatch.ElapsedMilliseconds - offset;
