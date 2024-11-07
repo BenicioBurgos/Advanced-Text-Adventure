@@ -71,14 +71,15 @@ namespace Advanced_Text_Adventure
         }
     }
 
-    unsafe abstract class Setting(string name)
+    unsafe abstract class Setting(string name, int position)
     {
         public string name = name;
+        public int position = position;
         public abstract void ChangeValue(bool increase);
         public abstract void Write(bool selected);
     } 
 
-    unsafe class NumberSetting<T>(string name, T* number, T step, T min, T max) : Setting(name) where T : INumber<T>
+    unsafe class NumberSetting<T>(string name, int position, T* number, T step, T min, T max) : Setting(name, position) where T : INumber<T>
     {
         public T* number = number;
         public T step = step;
@@ -95,21 +96,22 @@ namespace Advanced_Text_Adventure
 
         public override void Write(bool selected)
         {
+            Console.SetCursorPosition(0, position);
             Program.ClearLine();
             if (selected)
             {
                 Console.ForegroundColor = ConsoleColor.White;
-                Console.Write(name + ": < " + *number + " >\r\n");
+                Console.Write(name + ": < " + *number + " >");
             }
             else
             {
                 Console.ForegroundColor = ConsoleColor.Gray;
-                Console.Write(name + ": " + *number + "\r\n");
+                Console.Write(name + ": " + *number + "");
             }
         }
     }
 
-    unsafe class ColorSetting(string name, ConsoleColor* color) : Setting(name)
+    unsafe class ColorSetting(string name, int position, ConsoleColor* color) : Setting(name, position)
     {
         public ConsoleColor* color = color;
         readonly List<ConsoleColor> colors = [ConsoleColor.White, ConsoleColor.Red, ConsoleColor.DarkRed, ConsoleColor.Yellow, ConsoleColor.DarkYellow, ConsoleColor.Green, ConsoleColor.DarkGreen, ConsoleColor.Cyan, ConsoleColor.DarkCyan, ConsoleColor.Blue, ConsoleColor.DarkBlue, ConsoleColor.Magenta, ConsoleColor.DarkMagenta];
@@ -125,6 +127,7 @@ namespace Advanced_Text_Adventure
 
         public override void Write(bool selected)
         {
+            Console.SetCursorPosition(0, position);
             Program.ClearLine();
             if (selected)
             {
@@ -139,14 +142,14 @@ namespace Advanced_Text_Adventure
             if (selected)
             {
                 Program.Write("██", 0, *color);
-                Console.Write(" >\r\n");
+                Console.Write(" >");
             }
             else
-                Program.Write("██\r\n", 0, *color);
+                Program.Write("██", 0, *color);
         }
     }
 
-    unsafe class BoolSetting(string name, bool* setting) : Setting(name)
+    unsafe class BoolSetting(string name, int position, bool* setting) : Setting(name, position)
     {
         public bool* setting = setting;
         
@@ -157,6 +160,7 @@ namespace Advanced_Text_Adventure
 
         public override void Write(bool selected)
         {
+            Console.SetCursorPosition(0, position);
             Program.ClearLine();
             if (selected)
             {
@@ -173,13 +177,11 @@ namespace Advanced_Text_Adventure
             else
                 Console.Write("Off");
             if (selected)
-                Console.Write(" >\r\n");
-            else
-                Console.Write("\r\n");
+                Console.Write(" >");
         }
     }
 
-    unsafe class CharArraySetting(string name, char[]* chars) : Setting(name)
+    unsafe class CharArraySetting(string name, int position, char[]* chars) : Setting(name, position)
     {
         public char[]* chars = chars;
     
@@ -198,6 +200,7 @@ namespace Advanced_Text_Adventure
     
         public override void Write(bool selected)
         {
+            Console.SetCursorPosition(0, position);
             Program.ClearLine();
             if (selected)
                 Console.ForegroundColor = ConsoleColor.White;
@@ -210,9 +213,7 @@ namespace Advanced_Text_Adventure
                 if (c != (*chars).Length - 1)
                     Console.Write("|");
                 else if (selected && !Settings.changingSetting)
-                    Console.Write("(Enter to rebind)\r\n");
-                else
-                    Console.Write("\r\n");
+                    Console.Write("(Enter to rebind)");
             }
         }
     }

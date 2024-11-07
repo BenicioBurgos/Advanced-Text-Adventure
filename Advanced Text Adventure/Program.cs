@@ -78,26 +78,36 @@ namespace Advanced_Text_Adventure
             char[] chars10k = ['a', 's', 'd', 'f', 'v', 'n', 'j', 'k', 'l', ';'];
             unsafe 
             {
-                Settings.settings.Add(new NumberSetting<int>("Music offset (ms)", &offset, 5, -5000, 5000));
-                Settings.settings.Add(new NumberSetting<int>("Music volume", &volume, 1, 1, 100));
-                Settings.settings.Add(new NumberSetting<decimal>("Scroll speed", &scrollSpeed, 0.1M, 0.1M, 5));
-                Settings.settings.Add(new NumberSetting<int>("Lane width", &laneWidth, 1, 1, 10));
-                Settings.settings.Add(new NumberSetting<int>("Lane height", &laneHeight, 1, 5, 50));
-                Settings.settings.Add(new NumberSetting<int>("Combo display Y position", &comboDistance, 1, 1, 50));
-                Settings.settings.Add(new NumberSetting<int>("Song select image size", &songSelectSize, 2, 3, 99));
-                Settings.settings.Add(new ColorSetting("Note color", &noteColor));
-                Settings.settings.Add(new BoolSetting("Delete osz on import", &deleteOsz));
-                Settings.settings.Add(new CharArraySetting("1k bind", &chars1k));
-                Settings.settings.Add(new CharArraySetting("2k binds", &chars2k));
-                Settings.settings.Add(new CharArraySetting("3k binds", &chars3k));
-                Settings.settings.Add(new CharArraySetting("4k binds", &chars4k));
-                Settings.settings.Add(new CharArraySetting("5k binds", &chars5k));
-                Settings.settings.Add(new CharArraySetting("6k binds", &chars6k));
-                Settings.settings.Add(new CharArraySetting("7k binds", &chars7k));
-                Settings.settings.Add(new CharArraySetting("8k binds", &chars8k));
-                Settings.settings.Add(new CharArraySetting("9k binds", &chars9k));
-                Settings.settings.Add(new CharArraySetting("10k binds", &chars10k));
+                Settings.settings.Add(new NumberSetting<int>("Music offset (ms)", 0, &offset, 5, -5000, 5000));
+                Settings.settings.Add(new NumberSetting<int>("Music volume", 1, &volume, 1, 1, 100));
+                Settings.settings.Add(new NumberSetting<decimal>("Scroll speed", 3, &scrollSpeed, 0.1M, 0.1M, 5));
+                Settings.settings.Add(new NumberSetting<int>("Lane width", 4, &laneWidth, 1, 1, 10));
+                Settings.settings.Add(new NumberSetting<int>("Lane height", 5, &laneHeight, 1, 5, 50));
+                Settings.settings.Add(new NumberSetting<int>("Combo display Y position", 6, &comboDistance, 1, 1, 50));
+                Settings.settings.Add(new NumberSetting<int>("Song select image size", 7, &songSelectSize, 2, 3, 99));
+                Settings.settings.Add(new ColorSetting("Note color", 8, &noteColor));
+                Settings.settings.Add(new BoolSetting("Delete osz on import", 10, &deleteOsz));
+                Settings.settings.Add(new CharArraySetting("1k bind", 12, &chars1k));
+                Settings.settings.Add(new CharArraySetting("2k binds", 13, &chars2k));
+                Settings.settings.Add(new CharArraySetting("3k binds", 14, &chars3k));
+                Settings.settings.Add(new CharArraySetting("4k binds", 15, &chars4k));
+                Settings.settings.Add(new CharArraySetting("5k binds", 16, &chars5k));
+                Settings.settings.Add(new CharArraySetting("6k binds", 17, &chars6k));
+                Settings.settings.Add(new CharArraySetting("7k binds", 18, &chars7k));
+                Settings.settings.Add(new CharArraySetting("8k binds", 19, &chars8k));
+                Settings.settings.Add(new CharArraySetting("9k binds", 20, &chars9k));
+                Settings.settings.Add(new CharArraySetting("10k binds", 21, &chars10k));
             }
+            if (File.Exists(dataPath + "Settings"))
+            {
+                StreamReader sr = new(dataPath + "Settings");
+                foreach (Setting setting in Settings.settings)
+                {
+                    if (setting.GetType() == typeof(NumberSetting<>))
+                        Console.WriteLine("guh");
+                }
+            }
+            Console.ReadLine();
             LoadSongs();
             while (true)
             {
