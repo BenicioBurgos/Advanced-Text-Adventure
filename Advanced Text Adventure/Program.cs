@@ -173,14 +173,8 @@ namespace Advanced_Text_Adventure
             {
                 StreamReader sr = new(dataPath + "Settings");
                 foreach (Setting setting in Settings.settings)
-<<<<<<< HEAD
                     setting.Load(sr);
                 sr.Close();
-=======
-                {
-                    Console.WriteLine(sr.ReadLine());
-                }
->>>>>>> 68a622657091bb0807389f1d336aa92111158e8f
             }
             LoadSongs();
             while (true)
@@ -339,10 +333,7 @@ namespace Advanced_Text_Adventure
                                 Console.CursorVisible = false;
                                 selectedSong = menuPos;
                                 ManiaConverter.ReadData();
-<<<<<<< HEAD
                                 ChangeMusic(aPlayer, songs[selectedSong].path + "/" + songs[selectedSong].audioFiles[selectedDifficulty]);
-=======
->>>>>>> 68a622657091bb0807389f1d336aa92111158e8f
                                 int noteToSpawn = 0;
                                 List<Note> notes = [];
                                 List<Note> removeNotes = [];
@@ -363,16 +354,7 @@ namespace Advanced_Text_Adventure
                                 for (int s = 0; s < gameWidth; s++)
                                     emptyRenderLine += " ";
                                 Console.Title = $"{songs[selectedSong].name} ({songs[selectedSong].artist}) - {songs[selectedSong].chartNames[selectedDifficulty]}";
-<<<<<<< HEAD
                                 Thread.Sleep(10);
-=======
-                                wplayer.URL = songs[selectedSong].path + "/" + songs[selectedSong].audioFiles[selectedDifficulty];
-                                wplayer.controls.currentPosition = 0;
-                                wplayer.controls.play();
-                                Stopwatch stopwatch = new();
-                                float timer;
-                                stopwatch.Start();
->>>>>>> 68a622657091bb0807389f1d336aa92111158e8f
                                 while (true)
                                 {
                                     timer = (float)aPlayer.GetPositionTimeSpan().TotalMilliseconds - offset;
