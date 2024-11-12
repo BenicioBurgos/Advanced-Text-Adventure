@@ -1,6 +1,8 @@
-﻿using System.Diagnostics;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Runtime.InteropServices;
+using NAudio.Utils;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 #pragma warning disable 8500
 [assembly: System.Runtime.Versioning.SupportedOSPlatform("windows")]
@@ -44,9 +46,81 @@ namespace Advanced_Text_Adventure
         public static int currentKeys;
         public static int menuPos;
         public static int gameWidth;
+        public static float timer;
+        public static Vector2 windowSize = new(30, 40);
 
         static void Main(string[] args)
         {
+            Thread getInputs = new(new ThreadStart(GetMenuInputs));
+            getInputs.Start();
+            Thread detectWindow = new(new ThreadStart(DetectWindowScale));
+            detectWindow.Start();
+            Mp3FileReader reader = new(dataPath + "audio.mp3");
+            WaveChannel32 wave = new(reader);
+            float duration = (float)reader.TotalTime.TotalMilliseconds;
+            byte[] buffer = new byte[8192];
+            int read = 0;
+            List<List<int>> waveFormData = [];
+            while (wave.Position < wave.Length)
+            {
+                read = wave.Read(buffer, 0, 8192);
+                List<int> data = [];
+                Console.SetCursorPosition(0, 0); 
+                for (int i = 0; i < read / (8192 / windowSize.X); i++)
+                {
+                    data.Add((int)MathF.Floor(MathF.Max(BitConverter.ToSingle(buffer, i * (int)(8192 / windowSize.X)) * 15, 0)));
+                    Console.WriteLine(data[^1]);
+                }
+                Console.ReadLine();
+                waveFormData.Add(data);
+            }
+            WaveOutEvent aPlayer = new();
+            ChangeMusic(aPlayer, dataPath + "audio.mp3");
+            int[] heights = new int[(int)windowSize.X];
+            while (aPlayer.PlaybackState == PlaybackState.Playing)
+            {
+                Console.SetCursorPosition(0, 0);
+                int dataPos = (int)MathF.Max((float)(waveFormData.Count * (aPlayer.GetPositionTimeSpan().TotalMilliseconds / duration)), 0);
+                for (int i = 0; i < heights.Length; i++)
+                {
+                    if (MathF.Abs(heights[i] - waveFormData[dataPos][i]) < 2)
+                        heights[i] = waveFormData[dataPos][i];
+                    else
+                        heights[i] -= (heights[i] - waveFormData[dataPos][i]) / 2;
+                    //string o = heights[i] switch
+                    //{
+                    //    0 => "█",
+                    //    1 => "▒█",
+                    //    2 => "▒▒█",
+                    //    3 => "▒▒▒█",
+                    //    4 => "▒▒▒▒█",
+                    //    5 => "▒▒▒▒▒█",
+                    //    6 => "▒▒▒▒▒▒█",
+                    //    7 => "▒▒▒▒▒▒▒█",
+                    //    8 => "▒▒▒▒▒▒▒▒█",
+                    //    9 => "▒▒▒▒▒▒▒▒▒█",
+                    //    _ => "▒▒▒▒▒▒▒▒▒▒█"
+                    //};
+                    //ClearLine();
+                    //Console.WriteLine(o);
+                }
+                for (int y = 0; y < 10; y++)
+                {
+                    string line = "";
+                    foreach (int h in heights)
+                    {
+                        if (h == y)
+                            line += "█";
+                        else if (h > y)
+                            line += "▒";
+                        else
+                            line += " ";
+                    }
+                    Console.SetCursorPosition(0, (int)windowSize.Y - (1 + y));
+                    Console.Write(line);
+                }
+                Thread.Sleep(40);
+            }
             smallRankColors.Add('P', ConsoleColor.Magenta);
             smallRankColors.Add('S', ConsoleColor.Yellow);
             smallRankColors.Add('A', ConsoleColor.Green);
@@ -54,14 +128,11 @@ namespace Advanced_Text_Adventure
             smallRankColors.Add('C', ConsoleColor.DarkMagenta);
             smallRankColors.Add('D', ConsoleColor.DarkRed);
             smallRankColors.Add('-', ConsoleColor.DarkGray);
-            Thread getInputs = new(new ThreadStart(GetMenuInputs));
-            getInputs.Start();
-            WMPLib.WindowsMediaPlayer wplayer = new();
             int offset = 95;
             int volume = 15;
             decimal scrollSpeed = 2;
             int laneWidth = 6;
-            int laneHeight = 25;
+            int laneHeight = 35;
             int comboDistance = 10;
             int songSelectSize = 19;
             ConsoleColor noteColor = ConsoleColor.White;
@@ -102,19 +173,17 @@ namespace Advanced_Text_Adventure
             {
                 StreamReader sr = new(dataPath + "Settings");
                 foreach (Setting setting in Settings.settings)
-                {
-                    if (setting.GetType() == typeof(NumberSetting<>))
-                        Console.WriteLine("guh");
-                }
+                    setting.Load(sr);
+                sr.Close();
             }
-            Console.ReadLine();
             LoadSongs();
             while (true)
             {
             home:
+                windowSize = new((laneWidth + 2) * 10 + 16, laneHeight + 5);
                 Console.Clear();
                 Console.CursorVisible = false;
-                wplayer.settings.volume = volume;
+                aPlayer.Volume = volume / 100f;
                 menuPos = 0;
                 bool keyPressed = true;
                 Console.Title = "Main Menu";
@@ -216,11 +285,8 @@ namespace Advanced_Text_Adventure
                                     }
                                     for (int e = 0; e < diffs - songs[menuPos].chartPaths.Length; e++)
                                         ClearLine(true);
-                                    diffs = songs[menuPos].chartPaths.Length;
-                                    wplayer.controls.stop();
-                                    wplayer.URL = songs[menuPos].path + "/" + songs[menuPos].audioFiles[0];
-                                    wplayer.controls.play();
-                                    wplayer.controls.currentPosition = songs[menuPos].audioPrevTime / 1000f;
+                                    diffs = songs[menuPos].chartPaths.Length; 
+                                    ChangeMusic(aPlayer, songs[menuPos].path + "/" + songs[menuPos].audioFiles[0], songs[menuPos].audioPrevTime);
                                     keyPressed = false;
                                 }
                             }
@@ -267,12 +333,7 @@ namespace Advanced_Text_Adventure
                                 Console.CursorVisible = false;
                                 selectedSong = menuPos;
                                 ManiaConverter.ReadData();
-                                wplayer.URL = songs[selectedSong].path + "/" + songs[selectedSong].audioFiles[selectedDifficulty];
-                                wplayer.controls.play();
-                                wplayer.controls.currentPosition = 0;
-                                Stopwatch stopwatch = new();
-                                float timer;
-                                stopwatch.Start();
+                                ChangeMusic(aPlayer, songs[selectedSong].path + "/" + songs[selectedSong].audioFiles[selectedDifficulty]);
                                 int noteToSpawn = 0;
                                 List<Note> notes = [];
                                 List<Note> removeNotes = [];
@@ -293,9 +354,10 @@ namespace Advanced_Text_Adventure
                                 for (int s = 0; s < gameWidth; s++)
                                     emptyRenderLine += " ";
                                 Console.Title = $"{songs[selectedSong].name} ({songs[selectedSong].artist}) - {songs[selectedSong].chartNames[selectedDifficulty]}";
+                                Thread.Sleep(10);
                                 while (true)
                                 {
-                                    timer = stopwatch.ElapsedMilliseconds - offset;
+                                    timer = (float)aPlayer.GetPositionTimeSpan().TotalMilliseconds - offset;
                                     for (int i = 0; i < inputIds.Count; i++)
                                     {
                                         if (GetAsyncKeyState(inputIds[i]) != 0)
@@ -433,7 +495,7 @@ namespace Advanced_Text_Adventure
                                             2 => 'A',
                                             3 => 'B',
                                             4 => 'C',
-                                            _ => 'D',
+                                            _ => 'D'
                                         };
                                         songs[selectedSong].ranks[selectedDifficulty] = rankChar;
                                         StreamReader sr = new(songs[selectedSong].chartPaths[selectedDifficulty]);
@@ -483,7 +545,6 @@ namespace Advanced_Text_Adventure
                                     Console.ReadLine();
                                 }
                                 Console.Clear();
-                                wplayer.controls.stop();
                             }
                         }
                     case 1:
@@ -515,6 +576,22 @@ namespace Advanced_Text_Adventure
                         else
                             menuInputsDown[i] = menuInputs[i] = false;
                     }
+                }
+            });
+        }
+
+        public static async void DetectWindowScale()
+        {
+            await Task.Run(() =>
+            {
+                while (true)
+                {
+                    if (new Vector2(Console.WindowWidth, Console.WindowHeight ) != windowSize)
+                    {
+                        Console.WindowWidth = (int)windowSize.X;
+                        Console.WindowHeight = (int)windowSize.Y;
+                    }
+                    Thread.Sleep(500);
                 }
             });
         }
@@ -671,6 +748,15 @@ namespace Advanced_Text_Adventure
         {
             while (Console.KeyAvailable)
                 Console.ReadKey(true);
+        }
+
+        public static void ChangeMusic(WaveOutEvent player, string path, float position = 0)
+        {
+            player.Stop();
+            OffsetSampleProvider audio = new(new AudioFileReader(path));
+            audio.SkipOver = TimeSpan.FromSeconds(position / 1000f);
+            player.Init(audio);
+            player.Play();
         }
     }
 

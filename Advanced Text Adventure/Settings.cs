@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 #pragma warning disable 8500
 namespace Advanced_Text_Adventure
@@ -47,6 +48,12 @@ namespace Advanced_Text_Adventure
                 if (Program.menuInputsDown[3])
                     break;
             }
+            if (!File.Exists(Program.dataPath + "Settings"))
+                File.Create(Program.dataPath + "Settings");
+            StreamWriter sw = new(Program.dataPath + "Settings");
+            foreach (Setting setting in settings)
+                setting.Save(sw);
+            sw.Close();
         }
 
         public static void WriteSettings()
@@ -77,6 +84,8 @@ namespace Advanced_Text_Adventure
         public int position = position;
         public abstract void ChangeValue(bool increase);
         public abstract void Write(bool selected);
+        public abstract void Save(StreamWriter sw);
+        public abstract void Load(StreamReader sr);
     } 
 
     unsafe class NumberSetting<T>(string name, int position, T* number, T step, T min, T max) : Setting(name, position) where T : INumber<T>
@@ -108,6 +117,16 @@ namespace Advanced_Text_Adventure
                 Console.ForegroundColor = ConsoleColor.Gray;
                 Console.Write(name + ": " + *number + "");
             }
+        }
+
+        public override void Save(StreamWriter sw)
+        {
+            sw.WriteLine(*number);
+        }
+
+        public override void Load(StreamReader sr)
+        {
+            *number = T.Parse(sr.ReadLine(), null);
         }
     }
 
@@ -147,6 +166,16 @@ namespace Advanced_Text_Adventure
             else
                 Program.Write("██", 0, *color);
         }
+
+        public override void Save(StreamWriter sw)
+        {
+            sw.WriteLine(colors.IndexOf(*color));
+        }
+
+        public override void Load(StreamReader sr)
+        {
+            *color = colors[int.Parse(sr.ReadLine())];
+        }
     }
 
     unsafe class BoolSetting(string name, int position, bool* setting) : Setting(name, position)
@@ -178,6 +207,16 @@ namespace Advanced_Text_Adventure
                 Console.Write("Off");
             if (selected)
                 Console.Write(" >");
+        }
+
+        public override void Save(StreamWriter sw)
+        {
+            sw.WriteLine(*setting);
+        }
+
+        public override void Load(StreamReader sr)
+        {
+            *setting = bool.Parse(sr.ReadLine());
         }
     }
 
@@ -215,6 +254,20 @@ namespace Advanced_Text_Adventure
                 else if (selected && !Settings.changingSetting)
                     Console.Write("(Enter to rebind)");
             }
+        }
+
+        public override void Save(StreamWriter sw)
+        {
+            sw.WriteLine(string.Join(",", *chars));
+        }
+
+        public override void Load(StreamReader sr)
+        {
+            string[] strings = sr.ReadLine().Split(",");
+            char[] converted = new char[strings.Length];
+            for (int s = 0; s < strings.Length; s++) 
+                converted[s] = char.Parse(strings[s]);
+            *chars = converted;
         }
     }
 }
